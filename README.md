@@ -64,13 +64,7 @@ if res.Proxy.Valid {
 }
 ```
 
-A few conventions apply throughout:
-
-- **Sections** have a `Valid bool`. Reading fields of an invalid section is safe; they are just zero values.
-- **Optional fields** inside a section are wrapped in `iptrust.Optional[T]`, a struct with `Valid` and `Value`. Named instances cover the common cases: `OptionalString`, `OptionalFloat`, and `Optional[OrganizationType]`, `Optional[RiskLabel]`, `Optional[BotType]`, `Optional[ProxyType]` for the enumerations. A JSON `null` or missing key leaves `Valid` false.
-- **Optional timestamps** use `iptrust.OptionalTime`, which works the same way. It accepts full RFC 3339 timestamps and bare dates. Required timestamps on the database types are plain `time.Time`, zero if the API omitted them.
-- **Optional lists** such as `ASN.RiskTypes` and `Location.Area.Territories` are ordinary slices that are `nil` when absent.
-- **Enumerated fields** are typed strings with constants for the documented values. Unknown values pass through unchanged, so compare rather than assume.
+Each section struct contains a `Valid bool` field. This will be `false` for any section not returned by the API. Optional fields follow the same convention, with a `Valid bool` indicating if the field was set, and `Value` field with the underlying value.
 
 Full field reference: https://iptrust.co/docs
 
