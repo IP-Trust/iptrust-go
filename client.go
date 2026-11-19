@@ -110,6 +110,43 @@ func (c *Client) LookupIP(ctx context.Context, ip string) (IPResponse, error) {
 	return out, nil
 }
 
+// LookupIPs returns intelligence for up to 25 IPv4 or IPv6 addresses in one
+// request. The result is keyed by each address exactly as
+// it was passed in. Every address counts as one request towards your quota.
+//
+// The request succeeds or fails as a whole: an *Error with status 400 is
+// returned if any address is invalid, appears more than once, or the list
+// is empty or too long.
+func (c *Client) LookupIPs(ctx context.Context, ips []string) (map[string]IPResponse, error) {
+	if len(ips) == 0 {
+		return nil, errors.New("iptrust: at least one IP address is required")
+	}
+	var out map[string]IPResponse
+	if err := c.do(ctx, http.MethodPost, "/ip/batch", batchRequest{IPs: ips}, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// LookupASN returns details of an autonomous system: its owner, announced
+// routes, the countries its addresses are located in, and how many of its
+// addresses have been detected as VPNs or proxies. asn is an AS number in
+// the form "AS13335".
+//
+// Returns an *Error with status 400 for a malformed AS number, 403 when
+// your plan does not include ASN data, and 404 when the AS is unknown.
+func (c *Client) LookupASN(ctx context.Context, asn string) (ASNResponse, error) {
+	asn = strings.TrimSpace(asn)
+	if asn == "" {
+		return ASNResponse{}, errors.New("iptrust: an AS number is required")
+	}
+	var out ASNResponse
+	if err := c.do(ctx, http.MethodGet, "/asn/"+url.PathEscape(asn), nil, &out); err != nil {
+		return ASNResponse{}, err
+	}
+	return out, nil
+}
+
 // ListDatabases lists the databases available for download, including ones
 // your plan does not include (see Database.Entitled).
 func (c *Client) ListDatabases(ctx context.Context) ([]Database, error) {

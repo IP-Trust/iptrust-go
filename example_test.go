@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 
@@ -40,6 +41,50 @@ func ExampleClient_LookupIP() {
 			fmt.Println("last seen", res.VPN.LastDetected.Value.Format("2006-01-02"))
 		}
 	}
+}
+
+func ExampleClient_LookupIPs() {
+	client, err := iptrust.NewClient("your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ips := []string{"9.9.9.9", "2001:4860:4860::8888"}
+	results, err := client.LookupIPs(context.Background(), ips)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, ip := range ips {
+		res := results[ip]
+		if res.Location.Valid {
+			fmt.Println(ip, res.Location.Country)
+		}
+	}
+}
+
+func ExampleClient_LookupASN() {
+	client, err := iptrust.NewClient("your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res, err := client.LookupASN(context.Background(), "AS13335")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(res.ASN.Company, res.IPv4.TotalIPs, "IPv4 addresses in", res.IPv4.TotalRoutes, "routes")
+
+	// IPv6 address counts are too large for an int64, so they are strings.
+	if total, ok := new(big.Int).SetString(res.IPv6.TotalIPsStr, 10); ok {
+		fmt.Println(total.BitLen(), "bits of IPv6 addresses")
+	}
+
+	for _, country := range res.Countries {
+		fmt.Println(country.Country, country.IPv4IPs, country.IPv4Routes)
+	}
+	fmt.Println(res.Anonymization.DetectedVPNIPs, "VPN and", res.Anonymization.DetectedProxyIPs, "proxy addresses")
 }
 
 func ExampleError() {

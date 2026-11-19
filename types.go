@@ -83,7 +83,8 @@ type ASN struct {
 	Company string `json:"company"`
 	// Country is the ISO 3166-1 alpha-2 code where the AS is registered.
 	Country string `json:"country"`
-	// Route is the most specific BGP route prefix containing this IP.
+	// Route is the most specific BGP route prefix containing this IP. It is
+	// empty in a LookupASN response, which is not about a single IP.
 	Route string `json:"route"`
 	// RIR is the Regional Internet Registry, e.g. "ARIN", "RIPE", "APNIC".
 	RIR string `json:"rir"`
@@ -99,7 +100,7 @@ type ASN struct {
 	// RiskLabel is the risk level label, present when Risk is.
 	RiskLabel Optional[RiskLabel] `json:"risk_label,omitzero"`
 	// RiskTypes lists the risk signal categories. It is nil when the API
-	// reported none.
+	// reported none, and always nil in a LookupASN response.
 	RiskTypes []RiskType `json:"risk_types,omitempty"`
 }
 
@@ -301,6 +302,92 @@ type IPResponse struct {
 	VPN          VPN          `json:"vpn"`
 }
 
+// ASNResponse is the response from GET /asn/{asn}.
+type ASNResponse struct {
+	// ASN describes the autonomous system. Route and RiskTypes are not set.
+	ASN ASN `json:"asn"`
+	// UpdatedAt is when the details of this AS were last updated (UTC).
+	UpdatedAt OptionalTime `json:"updated_at,omitzero"`
+	// IPv4 is the IPv4 address space announced by the AS.
+	IPv4 ASNIPv4 `json:"ipv4"`
+	// IPv6 is the IPv6 address space announced by the AS.
+	IPv6 ASNIPv6 `json:"ipv6"`
+	// Countries lists where the AS's addresses are located, ordered by IPv4
+	// address count, largest first.
+	Countries []ASNCountry `json:"countries"`
+	// Anonymization counts the addresses in the AS detected as VPNs or
+	// proxies.
+	Anonymization ASNAnonymization `json:"anonymization"`
+}
+
+// ASNIPv4 is the IPv4 address space announced by an AS.
+type ASNIPv4 struct {
+	// TotalIPs is the number of IPv4 addresses announced.
+	TotalIPs int64 `json:"total_ips"`
+	// TotalRoutes is the number of IPv4 routes announced.
+	TotalRoutes int64 `json:"total_routes"`
+	// Routes holds the 100 largest routes, largest first.
+	Routes []ASNIPv4Route `json:"routes"`
+}
+
+// ASNIPv4Route is one IPv4 route announced by an AS.
+type ASNIPv4Route struct {
+	// Route is the prefix in CIDR notation.
+	Route string `json:"route"`
+	// IPs is the number of addresses the route covers.
+	IPs int64 `json:"ips"`
+}
+
+// ASNIPv6 is the IPv6 address space announced by an AS.
+//
+// IPv6 address counts do not fit in a JSON number or an int64, so the API
+// sends them as decimal strings. Parse one with (*big.Int).SetString(s, 10).
+type ASNIPv6 struct {
+	// TotalIPsStr is the number of IPv6 addresses announced, as a decimal
+	// string.
+	TotalIPsStr string `json:"total_ips_str"`
+	// TotalRoutes is the number of IPv6 routes announced.
+	TotalRoutes int64 `json:"total_routes"`
+	// Routes holds the 100 largest routes, largest first.
+	Routes []ASNIPv6Route `json:"routes"`
+}
+
+// ASNIPv6Route is one IPv6 route announced by an AS.
+type ASNIPv6Route struct {
+	// Route is the prefix in CIDR notation.
+	Route string `json:"route"`
+	// IPsStr is the number of addresses the route covers, as a decimal
+	// string.
+	IPsStr string `json:"ips_str"`
+}
+
+// ASNCountry is the share of an AS's address space located in one country.
+type ASNCountry struct {
+	// Country is the ISO 3166-1 alpha-2 country code.
+	Country string `json:"country"`
+	// CountryName is the full country name.
+	CountryName string `json:"country_name"`
+	// IPv4IPs is the number of the AS's IPv4 addresses in this country.
+	IPv4IPs int64 `json:"ipv4_ips"`
+	// IPv4Routes is the number of IPv4 routes with addresses in this
+	// country. A route spanning several countries is counted in each.
+	IPv4Routes int64 `json:"ipv4_routes"`
+	// IPv6IPsStr is the number of the AS's IPv6 addresses in this country,
+	// as a decimal string.
+	IPv6IPsStr string `json:"ipv6_ips_str"`
+	// IPv6Routes is the number of IPv6 routes with addresses in this
+	// country. A route spanning several countries is counted in each.
+	IPv6Routes int64 `json:"ipv6_routes"`
+}
+
+// ASNAnonymization counts the addresses in an AS detected as anonymizers.
+type ASNAnonymization struct {
+	// DetectedVPNIPs is the number of addresses detected as VPN exit nodes.
+	DetectedVPNIPs int64 `json:"detected_vpn_ips"`
+	// DetectedProxyIPs is the number of addresses detected as proxies.
+	DetectedProxyIPs int64 `json:"detected_proxy_ips"`
+}
+
 // DatabaseType identifies a downloadable database.
 type DatabaseType string
 
@@ -371,6 +458,10 @@ type DatabaseDownload struct {
 
 type databaseListResponse struct {
 	Databases []Database `json:"databases"`
+}
+
+type batchRequest struct {
+	IPs []string `json:"ips"`
 }
 
 type downloadRequest struct {

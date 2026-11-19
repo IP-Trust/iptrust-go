@@ -68,6 +68,45 @@ Each section struct contains a `Valid bool` field. This will be `false` for any 
 
 Full field reference: https://iptrust.co/docs
 
+## Batch IP lookup
+
+`LookupIPs` calls `POST /ip/batch` with up to 25 addresses and returns a `map[string]IPResponse` keyed by each address exactly as you passed it. Every address counts as one request towards your quota.
+
+```go
+ips := []string{"9.9.9.9", "2001:4860:4860::8888"}
+results, err := client.LookupIPs(ctx, ips)
+for _, ip := range ips {
+    res := results[ip]
+    fmt.Println(ip, res.Location.Country)
+}
+```
+
+The request succeeds or fails as a whole. If any address is invalid or appears twice, the call returns an `*iptrust.Error` with status 400 and no results.
+
+## ASN lookup
+
+`LookupASN` calls `GET /asn/{asn}` with an AS number such as `"AS13335"` and returns an `ASNResponse`: the same `ASN` struct as an IP lookup (without `Route` and `RiskTypes`), plus the AS's announced routes, the countries its addresses are in, and how many of its addresses have been detected as VPNs or proxies. Available on the Free, Identity and Complete packages.
+
+```go
+res, err := client.LookupASN(ctx, "AS13335")
+
+fmt.Println(res.ASN.Company)                              // "Cloudflare, Inc."
+fmt.Println(res.IPv4.TotalIPs, res.IPv4.TotalRoutes)      // int64
+for _, route := range res.IPv4.Routes {                   // the 100 largest routes
+    fmt.Println(route.Route, route.IPs)
+}
+
+// IPv6 address counts do not fit in an int64, so they are decimal strings.
+total, _ := new(big.Int).SetString(res.IPv6.TotalIPsStr, 10)
+
+for _, c := range res.Countries {
+    fmt.Println(c.Country, c.IPv4IPs, c.IPv4Routes, c.IPv6IPsStr, c.IPv6Routes)
+}
+fmt.Println(res.Anonymization.DetectedVPNIPs, res.Anonymization.DetectedProxyIPs)
+```
+
+An unknown AS number returns an `*iptrust.Error` with status 404.
+
 ## Database downloads
 
 For plans that include database downloads.
