@@ -19,7 +19,7 @@ const (
 	// DefaultTimeout is the per-request timeout applied when none is set.
 	DefaultTimeout = 10 * time.Second
 	// Version is the SDK version, sent in the User-Agent header.
-	Version = "0.1.0"
+	Version = "0.2.0"
 
 	defaultUserAgent = "iptrust-go/" + Version
 )
