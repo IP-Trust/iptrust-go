@@ -2,7 +2,7 @@
 
 Official Go SDK for the [IP Trust](https://iptrust.co) API. Look up geolocation, ASN, company, hosting, known bot, VPN, proxy, Tor and privacy relay data for any IPv4 or IPv6 address, and download the underlying databases. No dependencies outside the standard library.
 
-Get a free API key from the [IP Trust dashboard](https://dashboard.iptrust.co/). IP Trust is free for up to 10,000 requests a month.
+Get a free API key from the [IP Trust dashboard](https://dashboard.iptrust.co/).
 
 ## Install
 
